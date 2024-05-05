@@ -136,12 +136,24 @@ public:
     }
 
     void agregarLinea(Linea* linea) {
+        // Verificar si la línea ya existe
+        for (int i = 0; i < numLineas; ++i) {
+            if (lineas[i]->getNombre() == linea->getNombre()) {
+                cout << "Error: La línea '" << linea->getNombre() << "' ya existe en la red." << endl;
+                delete linea; // Liberar la memoria de la línea que no se va a agregar
+                return;
+            }
+        }
+
+        // Si no existe, agregar la línea
         if (numLineas < capacidad) {
             lineas[numLineas++] = linea;
         } else {
             cout << "Error: No se pueden agregar más líneas a la red." << endl;
+            delete linea; // Liberar la memoria de la línea que no se va a agregar
         }
     }
+
 
     Linea* obtenerLineaPorNombre(const string& nombre) const {
         for (int i = 0; i < numLineas; ++i) {
@@ -171,6 +183,63 @@ public:
 
 int main() {
 
+    Red metro;
+    int opcion;
+
+    cout << "RED DE METRO" << endl;
+    while (true) {
+        cout << endl << "Seleccione una opcion:" << endl;
+        cout << "1. Agregar Linea" << endl;
+        cout << "2. Agregar Estacion" << endl;
+        cout << "3. Salir" << endl;
+        cout << "Opcion: ";
+        cin >> opcion;
+
+        if (opcion == 1) {
+            string nombre, tipoTransporte;
+            cout << "Ingrese el nombre de la linea: ";
+            cin >> nombre;
+            cout << "Ingrese el tipo de transporte (tren/tranvia): ";
+            cin >> tipoTransporte;
+
+            Linea* nuevaLinea = new Linea(nombre, tipoTransporte);
+            metro.agregarLinea(nuevaLinea);
+        } else if (opcion == 2) {
+            string nombreLinea, nombreEstacion;
+            cout << "Ingrese el nombre de la linea: ";
+            cin >> nombreLinea;
+            Linea* linea = metro.obtenerLineaPorNombre(nombreLinea);
+            if (linea == nullptr) {
+                cout << "La linea especificada no existe." << endl;
+                continue; // Volver al inicio del bucle
+            }
+            cout << "Ingrese el nombre de la estacion: ";
+            cin >> nombreEstacion;
+
+            Estacion* nuevaEstacion = new Estacion(nombreEstacion, false); // Por defecto no es de transferencia
+            linea->agregarEstacion(nuevaEstacion);
+        } else if (opcion == 3) {
+            break;
+        } else {
+            cout << "Opcion invalida. Por favor ingrese 1, 2 o 3." << endl;
+        }
+    }
+
+    // Imprimir las líneas en la red y las estaciones en cada línea
+    cout << endl << "Lineas en la red:" << endl;
+    for (int i = 0; i < metro.numeroLineas(); ++i) {
+        Linea* linea = metro[i];
+        cout << "Nombre: " << linea->getNombre() << ", Tipo: " << linea->getTransporte() << endl;
+        cout << "Estaciones:" << endl;
+        for (int j = 0; j < linea->cantidadEstaciones(); ++j) {
+            Estacion* estacion = linea->obtenerEstacion(j);
+            cout << " - " << estacion->getNombre() << endl;
+        }
+        cout << endl;
+    }
+
+    cout << "Numero de lineas en la red: " << metro.numeroLineas() << endl;
+    cout << "Numero de estaciones en la red: " << metro.cantidadEstaciones() << endl;
 
     return 0;
 }
