@@ -3,21 +3,21 @@
 
 using namespace std;
 
-// Definición adelantada de la clase Estacion
+// Definicion adelantada de la clase Estacion
 class Estacion;
 
-// Definición completa de la clase Linea
+// Definicion completa de la clase Linea
 class Linea {
 private:
     string nombre;
-    string transporte;
     Estacion* primeraEstacion;
     Estacion* ultimaEstacion;
     Linea* siguiente;
     int numEstaciones;
+    bool tieneEstacionTransferencia;
 
 public:
-    Linea(string _nombre) : nombre(_nombre), primeraEstacion(nullptr), ultimaEstacion(nullptr), siguiente(nullptr), numEstaciones(0) {}
+    Linea(string _nombre) : nombre(_nombre), primeraEstacion(nullptr), ultimaEstacion(nullptr), siguiente(nullptr), numEstaciones(0), tieneEstacionTransferencia(false) {}
 
     string getNombre() const {
         return nombre;
@@ -30,12 +30,20 @@ public:
     void agregarEstacion(Estacion* estacion);
 
     bool eliminarEstacion(Estacion* estacion) {
-        // Implementa la lógica para eliminar una estación de la línea
+        // Implementa la logica para eliminar una estacion de la linea
         return false;
     }
 
+    bool tieneTransferencia() const {
+        return tieneEstacionTransferencia;
+    }
+
+    void marcarTransferencia() {
+        tieneEstacionTransferencia = true;
+    }
+
     int tiempoDeViaje(Estacion* origen, Estacion* destino) const {
-        // Implementa la lógica para calcular el tiempo de viaje entre dos estaciones en la línea
+        // Implementa la logica para calcular el tiempo de viaje entre dos estaciones en la linea
         return 0;
     }
 
@@ -52,7 +60,7 @@ public:
     }
 };
 
-// Definición completa de la clase Estacion
+// Definicion completa de la clase Estacion
 class Estacion {
 private:
     string nombre;
@@ -62,7 +70,7 @@ private:
     Estacion* anterior;
     Estacion* siguiente;
 
-    // Métodos privados para el manejo de memoria
+    // Metodos privados para el manejo de memoria
     void expandirCapacidad() {
         int nuevaCapacidad = capacidadLineas * 2;
         Linea** temp = new Linea*[nuevaCapacidad];
@@ -119,18 +127,27 @@ public:
         return false;
     }
 
+    bool tieneTransferencia() const {
+        for (int i = 0; i < numLineas; ++i) {
+            if (lineas[i]->tieneTransferencia()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool eliminarEstacion(Estacion* estacion) {
-        // Implementa la lógica para eliminar una estación
+        // Implementa la logica para eliminar una estacion
         return false;
     }
 
     int tiempoDeViaje(Estacion* origen, Estacion* destino) const {
-        // Implementa la lógica para calcular el tiempo de viaje entre dos estaciones
+        // Implementa la logica para calcular el tiempo de viaje entre dos estaciones
         return 0;
     }
 };
 
-// Definición del método agregarEstacion de la clase Linea
+// Definicion del metodo agregarEstacion de la clase Linea
 void Linea::agregarEstacion(Estacion* estacion) {
     if (!primeraEstacion) {
         primeraEstacion = estacion;
@@ -140,6 +157,11 @@ void Linea::agregarEstacion(Estacion* estacion) {
         ultimaEstacion = estacion;
     }
     numEstaciones++;
+
+    // Si la estacion agregada es de transferencia, marcar la linea
+    if (estacion->tieneTransferencia()) {
+        marcarTransferencia();
+    }
 }
 
 class Red {
@@ -160,24 +182,54 @@ public:
             ultimaLinea = linea;
         }
         numLineas++;
-        mostrarEstructura();
     }
 
     void mostrarEstructura() const {
         Linea* tempLinea = primeraLinea;
         while (tempLinea) {
-            cout << "Línea: " << tempLinea->getNombre() << endl;
-            Estacion* tempEstacion = tempLinea->obtenerPrimeraEstacion(); // Usar el nuevo método
+            cout << "Linea: " << tempLinea->getNombre();
+            if (tempLinea->tieneTransferencia()) {
+                cout << " (con estacion de transferencia)";
+            }
+            cout << endl;
+            Estacion* tempEstacion = tempLinea->obtenerPrimeraEstacion(); // Usar el nuevo metodo
             while (tempEstacion) {
-                cout << "- Estación: " << tempEstacion->getNombre() << endl;
+                cout << "- Estacion: " << tempEstacion->getNombre() << endl;
                 tempEstacion = tempEstacion->getSiguiente();
             }
             tempLinea = tempLinea->getSiguiente();
         }
     }
 
+    Linea* getPrimeraLinea() const {
+        return primeraLinea;
+    }
+
     void eliminarLinea(Linea* linea) {
-        // Implementa la lógica para eliminar una línea de la red
+        // Verificar si la linea tiene estaciones de transferencia
+        if (linea->tieneTransferencia()) {
+            cout << "No se puede eliminar la linea '" << linea->getNombre() << "' porque tiene una estacion de transferencia." << endl;
+            return;
+        }
+
+        // Implementa la logica para eliminar una linea de la red
+        Linea* tempLinea = primeraLinea;
+        Linea* prevLinea = nullptr;
+        while (tempLinea && tempLinea != linea) {
+            prevLinea = tempLinea;
+            tempLinea = tempLinea->getSiguiente();
+        }
+
+        if (!prevLinea) {
+            primeraLinea = tempLinea->getSiguiente();
+        } else {
+            prevLinea->setSiguiente(tempLinea->getSiguiente());
+        }
+
+        delete tempLinea;
+        numLineas--;
+
+        cout << "Linea eliminada exitosamente." << endl;
     }
 
     int contarLineas() const {
@@ -185,7 +237,7 @@ public:
     }
 
     void mostrarMenu() {
-        cout << "Menú de opciones:" << endl;
+        cout << "Menu de opciones:" << endl;
         cout << "1. Crear estacion" << endl;
         cout << "2. Eliminar estacion" << endl;
         cout << "3. Crear linea" << endl;
@@ -196,7 +248,7 @@ public:
         cout << "Seleccione una opcion: ";
     }
 
-    // Método para crear una línea en la red
+    // Metodo para crear una linea en la red
     void crearLinea() {
         string nombreLinea;
         cout << "Ingrese el nombre de la linea: ";
@@ -205,19 +257,19 @@ public:
         Linea* nuevaLinea = new Linea(nombreLinea);
         agregarLinea(nuevaLinea);
 
-        cout << "Linea creada exitosamente.\n" << endl;
+        cout << "Linea creada exitosamente." << endl;
     }
 };
 
 int calcularTiempoDeLlegada(Estacion* origen, Estacion* destino) {
-    // Implementa la lógica para calcular el tiempo de llegada
+    // Implementa la logica para calcular el tiempo de llegada
     return 0;
 }
 
 int main() {
     Red red;
     int opcion;
-    cout << "Bienvenido al sistema de gestion de la red de metro.\n" << endl;
+    cout << "Bienvenido al sistema de gestion de la red de metro." << endl;
     do {
         red.mostrarMenu();
         cin >> opcion;
@@ -225,19 +277,38 @@ int main() {
 
         switch (opcion) {
         case 1:
-            // Implementa la lógica para crear una estación
+            // Implementa la logica para crear una estacion
             break;
         case 2:
-            // Implementa la lógica para eliminar una estación
+            // Implementa la logica para eliminar una estacion
             break;
         case 3:
-            red.crearLinea(); // Crear línea en la red
+            red.crearLinea(); // Crear linea en la red
             break;
-        case 4:
-            // Implementa la lógica para eliminar una línea
+        case 4: {
+            string nombreLinea;
+            cout << "Ingrese el nombre de la linea que desea eliminar: ";
+            cin >> nombreLinea;
+
+            Linea* lineaEliminar = nullptr;
+            Linea* tempLinea = red.getPrimeraLinea();
+            while (tempLinea) {
+                if (tempLinea->getNombre() == nombreLinea) {
+                    lineaEliminar = tempLinea;
+                    break;
+                }
+                tempLinea = tempLinea->getSiguiente();
+            }
+
+            if (lineaEliminar) {
+                red.eliminarLinea(lineaEliminar);
+            } else {
+                cout << "La linea especificada no existe en la red." << endl;
+            }
             break;
+        }
         case 5:
-            // Implementa la lógica para calcular el tiempo de desplazamiento entre estaciones
+            // Implementa la logica para calcular el tiempo de desplazamiento entre estaciones
             break;
         case 6:
             cout << "¡Hasta luego!" << endl;
